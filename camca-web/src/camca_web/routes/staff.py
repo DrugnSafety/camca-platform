@@ -86,3 +86,23 @@ async def upload(request: Request, video: UploadFile,
         case_id = case.id
     return request.app.state.templates.TemplateResponse(
         request, "upload.html", {"case_id": case_id})
+
+
+@router.post("/cases/{case_id}/rerun")
+def rerun(request: Request, case_id: str):
+    user = require_staff(request)
+    with request.app.state.session_factory() as s:
+        case = s.get(Case, case_id)
+        if case is None:
+            raise HTTPException(404)
+        job = (s.query(Job).filter_by(case_id=case_id)
+               .order_by(Job.created_at.desc()).first())
+        if job is None:
+            job = Job(case_id=case_id)
+            s.add(job)
+        job.status = "pending"
+        job.error = None
+        case.status = "ANALYZING" if case.status == "FAILED" else case.status
+        write_audit(s, "case_rerun", case_id=case_id, detail={"by": user})
+        s.commit()
+    return {"ok": True, "case_id": case_id}
