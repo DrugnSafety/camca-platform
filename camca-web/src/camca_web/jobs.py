@@ -9,12 +9,19 @@ import time
 import traceback
 from typing import Callable
 
+from sqlalchemy import update
+
 from .db import Job, write_audit
 
 
 def run_pending_once(session_factory, processor: Callable[[str], None],
                      max_attempts: int = 3) -> int:
-    """pending 잡을 순서대로 1패스 처리. 처리한 잡 수를 반환 (테스트/워커 공용)."""
+    """pending 잡을 순서대로 1패스 처리. 처리한 잡 수를 반환 (테스트/워커 공용).
+
+    claim은 조건부 UPDATE로 원자적으로 수행한다 — SELECT-then-UPDATE는 두
+    워커가 동시에 같은 잡을 claim하는 경쟁을 허용하므로, WHERE 절에 상태
+    조건을 걸고 rowcount == 1일 때만 claim 성공으로 간주한다.
+    """
     processed = 0
     with session_factory() as s:
         pending = (s.query(Job).filter_by(status="pending")
@@ -22,12 +29,16 @@ def run_pending_once(session_factory, processor: Callable[[str], None],
         job_ids = [j.id for j in pending]
     for job_id in job_ids:
         with session_factory() as s:
-            job = s.get(Job, job_id)
-            if job is None or job.status != "pending" or job.attempts >= max_attempts:
-                continue
-            job.status = "running"
-            job.attempts += 1
+            result = s.execute(
+                update(Job)
+                .where(Job.id == job_id, Job.status == "pending",
+                       Job.attempts < max_attempts)
+                .values(status="running", attempts=Job.attempts + 1)
+            )
             s.commit()
+            if result.rowcount != 1:
+                continue
+            job = s.get(Job, job_id)
             case_id = job.case_id
         try:
             processor(case_id)
