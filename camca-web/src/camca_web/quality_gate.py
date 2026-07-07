@@ -28,7 +28,7 @@ def evaluate_quality(telemetry_stream: list[dict]) -> QualityResult:
     if not telemetry_stream:
         return QualityResult(passed=False, view="unknown", face_detection_rate=0.0,
                              reasons=["no_telemetry"])
-    cls = classify_view_angle(telemetry_stream)
+    cls = classify_view_angle(telemetry_stream, face_detection_rate_threshold=FACE_RATE_FAIL_BELOW)
     reasons: list[str] = []
     if cls.face_detection_rate < FACE_RATE_FAIL_BELOW or \
             cls.primary_view == "back_or_unknown":

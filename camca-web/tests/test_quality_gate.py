@@ -33,3 +33,16 @@ def test_partial_detection_passes_with_vlm_weight_up():
     r = evaluate_quality(stream)
     assert r.passed is True
     assert r.vlm_weight_up is True
+
+
+def test_low_band_passes_with_vlm_weight_up():
+    """Detection rate 0.3 ≤ rate < 0.8 범위: 통과하되 vlm_weight_up=True (spec §5.3-2).
+
+    Verifies that streams with detection rate in [0.3, 0.5) are not wrongly rejected
+    by the back_or_unknown classification when threshold=0.3.
+    """
+    stream = _stream(40) + _stream(60, face_detected=False)
+    r = evaluate_quality(stream)
+    assert r.passed is True
+    assert r.vlm_weight_up is True
+    assert r.face_detection_rate == 0.4
