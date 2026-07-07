@@ -102,6 +102,15 @@ def test_detect_breath_hold_stillness_fallback():
     assert 8500 <= events[0].t_start_ms <= 9500
 
 
+def test_breath_hold_not_fabricated_without_inhalation():
+    """흡입 이벤트가 전혀 없으면 정지 구간이 있어도 breath_hold를 만들지 않는다 (임상적 불가능)."""
+    t = make_telemetry(12_000, [
+        # chest 1.09: stillness 하한(1.08) 이상이지만 흡입 onset 기준(1.10) 미달, 오디오 조용
+        (0, 12_000, {"chest_expansion_ratio": 1.09}),
+    ])
+    assert detect_breath_hold_event(t, device_type="pMDI-AIM-simulator") == []
+
+
 def test_detect_events_full_technique(full_technique_telemetry):
     events = detect_events(full_technique_telemetry, device_type="pMDI")
     types = {e.type for e in events}

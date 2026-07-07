@@ -176,7 +176,9 @@ def detect_breath_hold_event(telemetry: list[dict], device_type: str = "pMDI") -
 
     # Stillness fallback — 흡입 시작점 이후부터 탐색
     onset_events = detect_inhalation_onset_event(telemetry, device_type)
-    search_from_ms = onset_events[0].t_end_ms if onset_events else 0
+    if not onset_events:
+        return []  # 흡입이 검출되지 않으면 breath-hold도 성립 불가 (false positive 방지)
+    search_from_ms = onset_events[0].t_end_ms
     silence_db = profile["baseline_db"] + 5.0
     window = EVENT_MIN_SUSTAIN_SAMPLES
 
