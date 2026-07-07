@@ -23,6 +23,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     init_db(engine)
     app.state.session_factory = make_session_factory(engine)
 
+    from fastapi.templating import Jinja2Templates
+    app.state.templates = Jinja2Templates(directory=TEMPLATE_DIR)
+    app.state.staff_accounts = {}   # 운영: 환경변수/CLI로 시드. 테스트: 직접 주입.
+
+    from .routes.staff import router as staff_router
+    app.include_router(staff_router)
+
     @app.get("/health")
     def health() -> dict:
         return {"status": "ok"}

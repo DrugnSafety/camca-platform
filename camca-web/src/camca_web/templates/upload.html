@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>영상 업로드</h1>
+{% if case_id %}<p>업로드 완료 — 케이스 <code>{{ case_id }}</code> 분석 대기열에 등록됨.</p>{% endif %}
+<form method="post" action="/upload" enctype="multipart/form-data">
+  <input name="research_code" placeholder="연구코드 (예: RC-001)" required>
+  <input name="dob" placeholder="생년월일 YYYY-MM-DD" required>
+  <select name="device_type">
+    <option>pMDI</option><option>pMDI-AIM-simulator</option>
+    <option>pMDI-spacer</option><option>DPI-turbuhaler</option>
+  </select>
+  <select name="source"><option>clinic</option><option>home</option></select>
+  <input name="video" type="file" accept="video/*" required>
+  <button>업로드</button>
+</form>
+{% endblock %}
