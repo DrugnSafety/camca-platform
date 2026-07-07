@@ -18,6 +18,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
+    from .db import make_engine, make_session_factory, init_db
+    engine = make_engine(settings.db_url)
+    init_db(engine)
+    app.state.session_factory = make_session_factory(engine)
+
     @app.get("/health")
     def health() -> dict:
         return {"status": "ok"}
