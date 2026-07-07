@@ -1,0 +1,18 @@
+{
+  "case_id": "CAMCA-PARK-001",
+  "device_type": "pMDI-AIM-simulator",
+  "source": "human-reviewed VLM segmentation, 2026-05-12 (see evaluations/CAMCA-20260512-150557)",
+  "video_duration_ms": 13330,
+  "segments": [
+    {"step_id": "S4", "observable": true,  "t_start_ms": 0,    "t_end_ms": 1500},
+    {"step_id": "S5", "observable": true,  "t_start_ms": 500,  "t_end_ms": 3000},
+    {"step_id": "S6", "observable": true,  "t_start_ms": 1500, "t_end_ms": 6000},
+    {"step_id": "S7", "observable": true,  "t_start_ms": 6000, "t_end_ms": 12500},
+    {"step_id": "S1", "observable": false, "t_start_ms": null, "t_end_ms": null},
+    {"step_id": "S2", "observable": false, "t_start_ms": null, "t_end_ms": null},
+    {"step_id": "S3", "observable": false, "t_start_ms": null, "t_end_ms": null},
+    {"step_id": "S8", "observable": false, "t_start_ms": null, "t_end_ms": null},
+    {"step_id": "S9", "observable": false, "t_start_ms": null, "t_end_ms": null}
+  ],
+  "note": "gold 경계 자체가 VLM 산출(겹침 있음)이므로 MABE 게이트는 향후 human 재라벨 후 강화. 현 시점 게이트: 관측/비관측 일치 + 겹침 0 + MABE < 1.5s"
+}
