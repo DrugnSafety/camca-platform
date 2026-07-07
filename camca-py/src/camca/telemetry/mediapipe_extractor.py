@@ -218,6 +218,7 @@ class VisionTelemetryExtractor:
                 "index_finger_acceleration": float,
                 "wrist_zero_crossing_rate": int,
                 "chest_expansion_ratio": float,
+                "hand_mouth_distance_px": float,
             }
         """
         cv2 = self._cv2

@@ -8,7 +8,8 @@ Output schema (Pydantic-compatible):
       "head_pitch_deg": float,
       "index_finger_acceleration": float,
       "wrist_zero_crossing_rate": int,
-      "chest_expansion_ratio": float
+      "chest_expansion_ratio": float,
+      "hand_mouth_distance_px": float
     }
 """
 from __future__ import annotations
