@@ -8,7 +8,7 @@ from fastapi.responses import RedirectResponse
 
 from ..auth import make_session_cookie, read_session_cookie, verify_password
 from ..db import Case, Job, Participant, write_audit
-from ..state import ANALYZING, FAILED, can_transition
+from ..state import ANALYZING, FAILED
 
 router = APIRouter()
 
@@ -96,7 +96,7 @@ def rerun(request: Request, case_id: str):
         case = s.get(Case, case_id)
         if case is None:
             raise HTTPException(404)
-        if not can_transition(case.status, ANALYZING):
+        if case.status != FAILED:
             raise HTTPException(409, detail="case is not in FAILED state")
         job = (s.query(Job).filter_by(case_id=case_id)
                .order_by(Job.created_at.desc()).first())

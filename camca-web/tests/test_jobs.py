@@ -128,3 +128,24 @@ def test_rerun_rejected_when_not_failed(client, settings):
         job = s.get(Job, "job-nr")
         assert job.status == "done"
         assert s.get(Case, "case-nr").status == "REPORT_ISSUED"
+
+
+def test_rerun_rejected_when_quality_check(client, settings):
+    from camca_web.auth import hash_password
+    client.app.state.staff_accounts = {"staff": hash_password("pw")}
+    cookies = client.post("/login", data={"username": "staff", "password": "pw"},
+                          follow_redirects=False).cookies
+    with client.app.state.session_factory() as s:
+        p = Participant(research_code="RC-QC", dob="1980-01-01")
+        s.add(p); s.flush()
+        s.add(Case(id="case-qc", participant_id=p.id, video_path="v.mp4",
+                   device_type="pMDI", source="clinic", status="QUALITY_CHECK"))
+        s.add(Job(id="job-qc", case_id="case-qc", status="pending"))
+        s.commit()
+    r = client.post("/cases/case-qc/rerun", cookies=cookies)
+    assert r.status_code == 409
+    with client.app.state.session_factory() as s:
+        job = s.get(Job, "job-qc")
+        assert job.status == "pending"
+        assert job.attempts == 0
+        assert s.get(Case, "case-qc").status == "QUALITY_CHECK"
