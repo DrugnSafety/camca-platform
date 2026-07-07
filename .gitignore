@@ -1,0 +1,44 @@
+# Build artifacts (배포본은 GitHub Releases로 별도 첨부 권장)
+*.whl
+*.tar.gz
+*.plugin
+*.zip
+
+# 임시·캐시
+__pycache__/
+*.py[cod]
+*$py.class
+.DS_Store
+~$*
+*.tmp
+*.bak
+
+# 가상환경
+.venv/
+venv/
+env/
+camca-env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# 영상 원본 (개인정보 — IRB raw data는 PUBLIC repo에 절대 push 금지)
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.wav
+
+# 분석 raw frame (개인 식별 가능성 — 환자 동의 범위 외)
+camca-inhaler-eval/logs/*/frames/
+camca-inhaler-eval/logs/*/frames_dense/
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Python 빌드
+build/
+dist/
+*.egg-info/
