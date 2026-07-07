@@ -8,23 +8,32 @@ import hashlib
 import hmac
 import os
 
-from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
+from itsdangerous import BadSignature, URLSafeTimedSerializer
 
-_PBKDF2_ITER = 200_000
+_PBKDF2_ITER = 600_000
 
 
 def hash_password(pw: str) -> str:
     salt = os.urandom(16)
     dk = hashlib.pbkdf2_hmac("sha256", pw.encode(), salt, _PBKDF2_ITER)
-    return salt.hex() + ":" + dk.hex()
+    return f"pbkdf2_sha256${_PBKDF2_ITER}${salt.hex()}${dk.hex()}"
 
 
 def verify_password(pw: str, hashed: str) -> bool:
     try:
-        salt_hex, dk_hex = hashed.split(":")
+        parts = hashed.split("$")
+        if len(parts) != 4:
+            return False
+        scheme, iter_str, salt_hex, dk_hex = parts
+        if scheme != "pbkdf2_sha256":
+            return False
+        iterations = int(iter_str)
+    except (ValueError, IndexError):
+        return False
+    try:
+        dk = hashlib.pbkdf2_hmac("sha256", pw.encode(), bytes.fromhex(salt_hex), iterations)
     except ValueError:
         return False
-    dk = hashlib.pbkdf2_hmac("sha256", pw.encode(), bytes.fromhex(salt_hex), _PBKDF2_ITER)
     return hmac.compare_digest(dk.hex(), dk_hex)
 
 
@@ -40,7 +49,7 @@ def read_session_cookie(value: str, secret: str,
                         max_age_sec: int = 12 * 3600) -> str | None:
     try:
         return _serializer(secret, "staff-session").loads(value, max_age=max_age_sec)
-    except (BadSignature, SignatureExpired):
+    except BadSignature:
         return None
 
 
@@ -51,7 +60,7 @@ def make_patient_token(case_id: str, secret: str) -> str:
 def read_patient_token(token: str, secret: str, max_age_sec: int) -> str | None:
     try:
         return _serializer(secret, "patient-link").loads(token, max_age=max_age_sec)
-    except (BadSignature, SignatureExpired):
+    except BadSignature:
         return None
 
 
