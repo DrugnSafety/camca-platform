@@ -65,12 +65,24 @@ async def upload(request: Request, video: UploadFile,
         case_dir = Path(settings.storage_root) / "cases" / case.id
         case_dir.mkdir(parents=True, exist_ok=True)
         dest = case_dir / "original.mp4"
-        dest.write_bytes(await video.read())
-        case.video_path = str(dest)
-        s.add(Job(case_id=case.id, status="pending"))
-        write_audit(s, "case_uploaded", case_id=case.id,
-                    detail={"by": user, "source": source})
-        s.commit()
+        try:
+            dest.write_bytes(await video.read())
+            case.video_path = str(dest)
+            s.add(Job(case_id=case.id, status="pending"))
+            write_audit(s, "case_uploaded", case_id=case.id,
+                        detail={"by": user, "source": source})
+            s.commit()
+        except Exception:
+            # Clean up the video file if write succeeded but commit failed
+            if dest.exists():
+                dest.unlink(missing_ok=True)
+            # Remove case directory if now empty
+            try:
+                if not any(case_dir.iterdir()):
+                    case_dir.rmdir()
+            except (OSError, StopIteration):
+                pass
+            raise
         case_id = case.id
     return request.app.state.templates.TemplateResponse(
         request, "upload.html", {"case_id": case_id})
