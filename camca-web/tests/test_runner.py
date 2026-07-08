@@ -107,6 +107,62 @@ def test_quality_fail_stops_at_retake(env):
     assert issued == []                          # 발행 안 함
 
 
+def test_pipeline_receives_injected_telemetry_when_supported(env):
+    """finding 1: pipeline_factory가 inject_telemetry를 지원하면 익명화 전 원본에서
+    추출한 telemetry를 그대로 주입해, 오디오 없는 익명화본에서 재추출하지 않는다."""
+    sf, settings = env
+    injected = []
+
+    class FakePipeline:
+        def inject_telemetry(self, stream):
+            injected.append(stream)
+
+        def run_from_video(self, video_path, case_id):
+            return _fake_result()
+
+    deps = _deps(_fake_result())
+    deps.pipeline_factory = lambda case_dir, use_phase_engine: FakePipeline()
+    process_case("case-p", sf, settings, deps)
+    assert len(injected) == 1
+    assert injected[0] == [{"timestamp_ms": 0, "lip_distance_px": 20.0}]
+
+
+def test_segments_key_falls_back_to_video_segments(env):
+    """finding 1: legacy VLM segmenter는 'video_segments' 키를 쓰므로 runner가 대응해야 한다."""
+    sf, settings = env
+    result = _fake_result()
+    result.segments = {"video_segments": result.segments["segments"], "engine": "vlm-prompt"}
+    process_case("case-p", sf, settings, _deps(result))
+    with sf() as s:
+        seg = s.query(Segmentation).filter_by(case_id="case-p").one()
+        assert len(seg.segments) == 9
+
+
+def test_cloud_dispatch_audit_records_blur_coverage(env):
+    """finding 2: 익명화 커버리지 감사 — anonymize_fn 반환값이 audit detail에 남아야 한다."""
+    sf, settings = env
+    process_case("case-p", sf, settings, _deps(_fake_result()))
+    with sf() as s:
+        dispatch = next(a for a in s.query(AuditLog).all() if a.event == "cloud_dispatch")
+        assert "blur_coverage" in dispatch.detail
+        assert dispatch.detail["blur_coverage"] == pytest.approx(1.0)  # 1 blurred / 1 total
+
+
+def test_process_case_retry_replaces_not_duplicates(env):
+    """finding 3: 재실행 시 기존 Segmentation/Evaluation/Score를 지우고 새로 채운다."""
+    sf, settings = env
+    process_case("case-p", sf, settings, _deps(_fake_result()))
+    with sf() as s:
+        case = s.get(Case, "case-p")
+        case.status = "FAILED"
+        s.commit()
+    process_case("case-p", sf, settings, _deps(_fake_result()))
+    with sf() as s:
+        assert s.query(Segmentation).filter_by(case_id="case-p").count() == 1
+        assert s.query(Evaluation).filter_by(case_id="case-p").count() == 2
+        assert s.query(Score).filter_by(case_id="case-p").count() == 1
+
+
 def test_needs_attention_badge_does_not_block_issue(env):
     """spec §4: critical error가 있어도 발행은 진행 + 배지."""
     sf, settings = env

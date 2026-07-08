@@ -11,7 +11,8 @@ from typing import Callable
 
 from sqlalchemy import update
 
-from .db import Job, write_audit
+from .db import Case, Job, write_audit
+from .state import FAILED
 
 
 def run_pending_once(session_factory, processor: Callable[[str], None],
@@ -47,6 +48,9 @@ def run_pending_once(session_factory, processor: Callable[[str], None],
                 job = s.get(Job, job_id)
                 job.status = "failed"
                 job.error = f"{e}\n{traceback.format_exc()[-1500:]}"
+                case = s.get(Case, case_id)
+                if case is not None:
+                    case.status = FAILED
                 write_audit(s, "job_failed", case_id=case_id, detail={"error": str(e)})
                 s.commit()
         else:

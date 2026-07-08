@@ -4,6 +4,7 @@ import time
 import pytest
 from camca_web.db import (make_engine, make_session_factory, init_db,
                           Participant, Case, Job)
+from camca_web.state import FAILED
 from camca_web.jobs import run_pending_once, start_worker
 
 
@@ -41,6 +42,7 @@ def test_processor_error_marks_failed_and_records_error(sf):
         assert job.status == "failed"
         assert "pipeline exploded" in job.error
         assert job.attempts == 1
+        assert s.get(Case, "case-j").status == FAILED
 
 
 def test_failed_job_not_retried_automatically(sf):

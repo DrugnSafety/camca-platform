@@ -58,27 +58,45 @@ def process_case(case_id: str, session_factory, settings: Settings,
     # 2) 익명화 — 클라우드로 나가는 유일한 산출물 (PIPA 경계)
     case_dir = Path(settings.storage_root) / "cases" / case_id
     anon_path = case_dir / "anonymized.mp4"
-    deps.anonymize_fn(Path(video_path), anon_path)
+    anon_result = deps.anonymize_fn(Path(video_path), anon_path)
+    coverage = getattr(anon_result, "blur_coverage", None)
+    if coverage is None:
+        total_frames = getattr(anon_result, "total_frames", None)
+        blurred_frames = getattr(anon_result, "blurred_frames", None)
+        if total_frames and blurred_frames is not None:
+            coverage = blurred_frames / total_frames
     with session_factory() as s:
         case = s.get(Case, case_id)
         case.anonymized_path = str(anon_path)
         case.status = ANALYZING
         write_audit(s, "cloud_dispatch", case_id=case_id,
-                    detail={"artifact": str(anon_path)})
+                    detail={"artifact": str(anon_path), "blur_coverage": coverage})
         s.commit()
 
-    # 3) camca-py 파이프라인 (익명화본만 전달)
+    # 3) camca-py 파이프라인 (익명화본만 전달) — telemetry는 익명화로 오디오가
+    # 제거되기 전, 원본(로컬) 영상에서 이미 추출한 것을 그대로 주입한다.
+    # (익명화본에서 재추출하면 오디오 손실로 telemetry가 열화되어 phase
+    # engine이 조용히 legacy VLM segmenter로 폴백한다.)
     pipeline = deps.pipeline_factory(case_dir, True)
+    if hasattr(pipeline, "inject_telemetry"):
+        pipeline.inject_telemetry(telemetry)
     result = pipeline.run_from_video(anon_path, case_id=case_id)
 
     # 4) 산출물 저장 + NEEDS_ATTENTION 판정 (spec §3, §4)
-    segments = (result.segments or {}).get("segments", [])
+    result_segments = result.segments or {}
+    segments = result_segments.get("segments")
+    if segments is None:
+        segments = result_segments.get("video_segments", [])
     reasons = needs_attention_reasons(result.final_score, result.kappa_stats, segments)
     with session_factory() as s:
         case = s.get(Case, case_id)
+        # 재실행 대비 — 기존 산출물을 지우고 다시 채운다 (spec: FAILED → 원클릭 재실행).
+        s.query(Segmentation).filter_by(case_id=case_id).delete()
+        s.query(Evaluation).filter_by(case_id=case_id).delete()
+        s.query(Score).filter_by(case_id=case_id).delete()
         s.add(Segmentation(case_id=case_id, segments=segments,
-                           events=(result.segments or {}).get("events", []),
-                           engine=(result.segments or {}).get("engine", "vlm-prompt")))
+                           events=result_segments.get("events", []),
+                           engine=result_segments.get("engine", "vlm-prompt")))
         s.add(Evaluation(case_id=case_id, evaluator="A", raw=result.evaluator_a))
         s.add(Evaluation(case_id=case_id, evaluator="B", raw=result.evaluator_b))
         if result.tie_breaker:

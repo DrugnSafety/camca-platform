@@ -151,6 +151,15 @@ class MultiModelPipeline:
         self._video_path: Path | None = None
         self._stage_records: list[dict[str, Any]] = []
 
+    def inject_telemetry(self, stream: list[dict]) -> None:
+        """외부에서 추출한 telemetry(예: 익명화 전 원본 영상)를 주입 — 내부 재추출을 건너뛴다."""
+        self._telemetry_stream = stream
+        try:
+            from .telemetry.breath_hold_detector import compute_telemetry_summary
+            self._telemetry_summary = compute_telemetry_summary(stream)
+        except ImportError:
+            self._telemetry_summary = None
+
     def _now_iso(self) -> str:
         return datetime.now(timezone.utc).isoformat()
 
@@ -431,7 +440,13 @@ class MultiModelPipeline:
             print(f"       → {len(frames)} frames")
 
         # P1: Extract quantitative telemetry BEFORE evaluator stages
-        if self.enable_telemetry:
+        # (skip if already injected via inject_telemetry() — e.g. extracted from
+        # the pre-anonymization original video, since the anonymized video has
+        # no audio and would yield degraded telemetry).
+        if self._telemetry_stream is not None:
+            if verbose:
+                print("[0b/5] Using injected telemetry (skipping re-extraction)...")
+        elif self.enable_telemetry:
             if verbose:
                 print(f"[0b/5] Extracting telemetry (MediaPipe + librosa)...")
             self._telemetry_summary = self._stage_telemetry(video_path)
