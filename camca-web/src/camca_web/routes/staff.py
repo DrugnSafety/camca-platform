@@ -7,7 +7,7 @@ from fastapi import APIRouter, Form, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse
 
 from ..auth import make_session_cookie, read_session_cookie, verify_password
-from ..db import Case, Job, Participant, write_audit
+from ..db import Case, Job, Participant, Staff, write_audit
 from ..state import ANALYZING, FAILED
 
 router = APIRouter()
@@ -31,6 +31,11 @@ def login_form(request: Request):
 def login(request: Request, username: str = Form(), password: str = Form()):
     accounts = getattr(request.app.state, "staff_accounts", {})
     hashed = accounts.get(username)
+    if hashed is None:
+        # DB 시드 계정 fallback — `camca-web create-staff` (운영 경로)
+        with request.app.state.session_factory() as s:
+            row = s.query(Staff).filter_by(username=username).first()
+            hashed = row.password_hash if row else None
     if not hashed or not verify_password(password, hashed):
         raise HTTPException(status_code=401, detail="invalid credentials")
     resp = RedirectResponse("/upload", status_code=303)

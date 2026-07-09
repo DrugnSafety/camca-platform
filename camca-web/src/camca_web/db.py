@@ -127,6 +127,15 @@ class Job(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=_now, onupdate=_now)
 
 
+class Staff(Base):
+    """스태프 계정 — `camca-web create-staff`로 시드. 회원가입 없음 (spec)."""
+    __tablename__ = "staff"
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    username: Mapped[str] = mapped_column(String, unique=True)
+    password_hash: Mapped[str] = mapped_column(String)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+
 class AuditLog(Base):
     __tablename__ = "audit_log"
     id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
