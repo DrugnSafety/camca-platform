@@ -69,6 +69,22 @@ class SegmentsCorrected(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
 
 
+class ScoresCorrected(Base):
+    """의사 점수(레벨) 수정 — 수정본 재발행 + 원본 대비 diff (spec §4).
+
+    원본 Score 행은 불변으로 두고 수정본만 쌓는다 — 이 기록이 그대로
+    Step 2 human-vs-LLM 연구 데이터가 된다.
+    """
+    __tablename__ = "scores_corrected"
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    case_id: Mapped[str] = mapped_column(ForeignKey("cases.id"))
+    corrected_by: Mapped[str] = mapped_column(String)
+    per_step_levels: Mapped[dict] = mapped_column(JSON)  # 수정 후 전체 레벨 맵
+    final_score: Mapped[dict] = mapped_column(JSON)      # 결정론 엔진 재계산 결과
+    diff: Mapped[list] = mapped_column(JSON)              # [{step_id, before, after}]
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+
 class Evaluation(Base):
     """evaluator A/B/TB 원시 JSON — Step 2·3 연구 export (spec §3)."""
     __tablename__ = "evaluations"

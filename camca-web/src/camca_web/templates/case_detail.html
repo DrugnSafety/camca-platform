@@ -34,6 +34,36 @@
 <button id="saveBtn">경계 수정 저장</button>
 <p id="saveMsg"></p>
 
+{% if score_ctx %}
+<h2>점수 리뷰
+  {% if score_ctx.corrected %}
+  <span class="badge">수정본 v{{ score_ctx.revision }}</span>
+  {% endif %}
+</h2>
+<p>현재 판정: <b>{{ score_ctx.verdict }}</b>
+  {% if score_ctx.percent is not none %}({{ score_ctx.percent }}%){% endif %}</p>
+<table id="scoreTable">
+  <tr><th>단계</th><th>A</th><th>B</th><th>Consensus 레벨</th></tr>
+  {% for st in score_ctx.steps %}
+  <tr data-score-step="{{ st.step_id }}">
+    <td>{{ st.step_id }}</td>
+    <td>{{ st.a if st.a is not none else "-" }}</td>
+    <td>{{ st.b if st.b is not none else "-" }}</td>
+    <td>
+      <select name="level">
+        <option value="" {% if st.level is none %}selected{% endif %}>미관측</option>
+        {% for lv in [0, 1, 2, 3] %}
+        <option value="{{ lv }}" {% if st.level == lv %}selected{% endif %}>{{ lv }}</option>
+        {% endfor %}
+      </select>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+<button id="scoreSaveBtn">점수 수정 저장 + 리포트 재발행</button>
+<p id="scoreSaveMsg"></p>
+{% endif %}
+
 <script>
 // 드래그: 밴드 우측 핸들을 잡아 끝 경계를 조정 → 표의 입력값 동기화
 const tl = document.getElementById("timeline");
@@ -76,6 +106,25 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
   const j = await r.json();
   document.getElementById("saveMsg").textContent =
     r.ok ? `저장됨 — 변경 ${j.n_changes}건 (flywheel 라벨로 축적)` : "저장 실패";
+});
+
+// 점수 수정: select 값을 모아 결정론 재계산 + 수정본 리포트 재발행 요청
+const scoreBtn = document.getElementById("scoreSaveBtn");
+if (scoreBtn) scoreBtn.addEventListener("click", async () => {
+  const per_step_levels = {};
+  document.querySelectorAll("#scoreTable tr[data-score-step]").forEach(tr => {
+    const v = tr.querySelector('select[name="level"]').value;
+    per_step_levels[tr.dataset.scoreStep] = v === "" ? null : parseInt(v, 10);
+  });
+  const r = await fetch(`/cases/{{ case.id }}/scores`, {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({per_step_levels}),
+  });
+  const j = await r.json();
+  document.getElementById("scoreSaveMsg").textContent = !r.ok ? "저장 실패"
+    : j.n_changes === 0 ? "변경 없음"
+    : `저장됨 — 변경 ${j.n_changes}건 · 수정본 리포트 v${j.revision} 재발행`;
+  if (r.ok && j.n_changes > 0) location.reload();
 });
 </script>
 {% endblock %}
