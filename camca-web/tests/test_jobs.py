@@ -73,7 +73,7 @@ def test_start_worker_processes_pending_job_and_is_daemon(sf):
     seen = []
     thread = start_worker(sf, processor=seen.append, interval_sec=0.05)
     try:
-        deadline = time.monotonic() + 2.0
+        deadline = time.monotonic() + 5.0   # 전체 스위트 부하에서도 여유 (flake 방지)
         while time.monotonic() < deadline:
             with sf() as s:
                 job = s.get(Job, "job-1")

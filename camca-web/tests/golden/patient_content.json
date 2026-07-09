@@ -1,0 +1,19 @@
+{
+  "case_id": "GOLD-001",
+  "core_max": 6,
+  "core_percent": 83.3,
+  "core_score": 5,
+  "critical_errors_patient_friendly": [],
+  "device_type": "pMDI",
+  "evaluation_date": "2026-07-01",
+  "final_verdict": "ADEQUATE_WITH_EDUCATION",
+  "followup_recommendation_en": "Please review the results with your healthcare team at your next visit.",
+  "followup_recommendation_ko": "다음 진료 시 의료진과 함께 결과를 확인해 주세요.",
+  "improvements_en": [],
+  "improvements_ko": [],
+  "kappa": 0.72,
+  "kappa_interpretation_en": "substantial",
+  "kappa_interpretation_ko": "substantial",
+  "strengths_en": [],
+  "strengths_ko": []
+}

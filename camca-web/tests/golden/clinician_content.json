@@ -1,0 +1,44 @@
+{
+  "case_id": "GOLD-001",
+  "clinician_review_priority": "moderate",
+  "core_max": 6,
+  "core_percent": 83.3,
+  "core_score": 5,
+  "critical_errors": [],
+  "device_type": "pMDI",
+  "evaluation_date": "2026-07-01T09:00:00+00:00",
+  "final_verdict": "ADEQUATE_WITH_EDUCATION",
+  "kappa": 0.72,
+  "kappa_interpretation_en": "substantial",
+  "kappa_interpretation_ko": "substantial",
+  "metadata": {
+    "completed_at": "",
+    "models_used": {
+      "phase-engine": "claude:sonnet"
+    },
+    "stage_durations_ms": {
+      "phase-engine": 1200
+    },
+    "started_at": "2026-07-01T09:00:00+00:00",
+    "total_duration_sec": 0.0
+  },
+  "per_step_breakdown": [
+    {
+      "a_level": 2,
+      "agreement_label": "agree",
+      "b_level": 2,
+      "consensus_level": 2,
+      "step_id": "S4",
+      "tb_level": "-"
+    },
+    {
+      "a_level": 2,
+      "agreement_label": "disagree_minor",
+      "b_level": 3,
+      "consensus_level": 3,
+      "step_id": "S5",
+      "tb_level": "-"
+    }
+  ],
+  "tie_breaker_invoked": false
+}
