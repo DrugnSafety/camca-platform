@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>흡입제 사용 평가 리포트</h1>
+{% if case.quality_flag %}
+<p><em>영상 품질 안내: 일부 단계는 평가에서 제외되었을 수 있습니다.</em></p>
+{% endif %}
+<ul>
+{% for r in reports if r.kind.startswith("patient") %}
+  <li><a href="/r/{{ token }}/pdf/{{ r.kind }}">{{ r.kind }} (rev {{ r.revision }})</a></li>
+{% endfor %}
+</ul>
+{% endblock %}

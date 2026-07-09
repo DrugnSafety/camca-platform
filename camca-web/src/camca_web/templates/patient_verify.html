@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>본인 확인</h1>
+<p>리포트 열람을 위해 생년월일을 입력해 주세요.</p>
+<form method="post" action="/r/{{ token }}">
+  <input name="dob" placeholder="생년월일 YYYY-MM-DD" required>
+  <button>확인</button>
+</form>
+{% endblock %}

@@ -30,6 +30,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from .routes.staff import router as staff_router
     app.include_router(staff_router)
 
+    from .routes.patient import router as patient_router
+    app.include_router(patient_router)
+
     @app.get("/health")
     def health() -> dict:
         return {"status": "ok"}
