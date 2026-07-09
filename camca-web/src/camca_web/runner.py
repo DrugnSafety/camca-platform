@@ -80,6 +80,9 @@ def process_case(case_id: str, session_factory, settings: Settings,
     pipeline = deps.pipeline_factory(case_dir, True)
     if hasattr(pipeline, "inject_telemetry"):
         pipeline.inject_telemetry(telemetry)
+    # spec §5.3-2: telemetry 열화 영상은 Stage 2 VLM 가중 자동 상향 (L6 완화)
+    if quality.vlm_weight_up and hasattr(pipeline, "set_phase_vlm_weight_up"):
+        pipeline.set_phase_vlm_weight_up(True)
     result = pipeline.run_from_video(anon_path, case_id=case_id)
 
     # 4) 산출물 저장 + NEEDS_ATTENTION 판정 (spec §3, §4)

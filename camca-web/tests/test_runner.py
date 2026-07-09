@@ -176,3 +176,43 @@ def test_needs_attention_badge_does_not_block_issue(env):
         assert case.needs_attention is True
         assert set(case.attention_reasons) >= {"critical_error", "low_kappa"}
     assert issued == ["case-p"]
+
+
+def test_vlm_weight_up_propagates_to_pipeline_when_supported(env):
+    """spec §5.3-2: quality gate가 vlm_weight_up을 보고하면 Stage 2 VLM 가중을
+    파이프라인에 전달한다 (L6 완화 — 측면 촬영 등 telemetry 열화 영상)."""
+    sf, settings = env
+    weight_calls = []
+
+    class FakePipeline:
+        def set_phase_vlm_weight_up(self, value=True):
+            weight_calls.append(value)
+
+        def run_from_video(self, video_path, case_id):
+            return _fake_result()
+
+    oblique = QualityResult(passed=True, view="oblique",
+                            face_detection_rate=0.5, vlm_weight_up=True)
+    deps = _deps(_fake_result(), quality=oblique)
+    deps.pipeline_factory = lambda case_dir, use_phase_engine: FakePipeline()
+    process_case("case-p", sf, settings, deps)
+    assert weight_calls == [True]
+    with sf() as s:
+        assert s.get(Case, "case-p").quality_flag == "vlm_weight_up"
+
+
+def test_vlm_weight_up_not_called_for_frontal_video(env):
+    sf, settings = env
+    weight_calls = []
+
+    class FakePipeline:
+        def set_phase_vlm_weight_up(self, value=True):
+            weight_calls.append(value)
+
+        def run_from_video(self, video_path, case_id):
+            return _fake_result()
+
+    deps = _deps(_fake_result())
+    deps.pipeline_factory = lambda case_dir, use_phase_engine: FakePipeline()
+    process_case("case-p", sf, settings, deps)
+    assert weight_calls == []
