@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>케이스 {{ case.id }} <small>({{ case.status }})</small></h1>
+{% if case.needs_attention %}
+<p><span class="badge">NEEDS_ATTENTION</span> {{ case.attention_reasons | join(", ") }}</p>
+{% endif %}
+
+<video id="player" controls width="100%" src="/static/placeholder.mp4"></video>
+
+<div id="timeline" style="position:relative;height:48px;background:#eee;margin:8px 0"
+     data-duration="{{ duration_ms }}">
+  {% for s in segments if s.observable %}
+  <div class="band" data-step="{{ s.step_id }}"
+       data-start="{{ s.t_start_ms }}" data-end="{{ s.t_end_ms }}"
+       style="position:absolute;top:4px;bottom:4px;background:hsl({{ loop.index0 * 40 }},70%,60%);
+              left:{{ 100 * s.t_start_ms / duration_ms }}%;
+              width:{{ 100 * (s.t_end_ms - s.t_start_ms) / duration_ms }}%">
+    <span style="font-size:.7em">{{ s.step_id }}</span>
+    <div class="handle" style="position:absolute;right:-4px;top:0;bottom:0;width:8px;cursor:ew-resize"></div>
+  </div>
+  {% endfor %}
+</div>
+
+<table id="segTable">
+  <tr><th>단계</th><th>시작(ms)</th><th>끝(ms)</th></tr>
+  {% for s in segments %}
+  <tr data-step="{{ s.step_id }}">
+    <td>{{ s.step_id }}</td>
+    <td><input type="number" name="start" value="{{ s.t_start_ms if s.t_start_ms is not none else '' }}"></td>
+    <td><input type="number" name="end" value="{{ s.t_end_ms if s.t_end_ms is not none else '' }}"></td>
+  </tr>
+  {% endfor %}
+</table>
+<button id="saveBtn">경계 수정 저장</button>
+<p id="saveMsg"></p>
+
+<script>
+// 드래그: 밴드 우측 핸들을 잡아 끝 경계를 조정 → 표의 입력값 동기화
+const tl = document.getElementById("timeline");
+const duration = parseInt(tl.dataset.duration, 10);
+tl.querySelectorAll(".band .handle").forEach(h => {
+  h.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    const band = h.parentElement;
+    const move = ev => {
+      const rect = tl.getBoundingClientRect();
+      const ms = Math.round((ev.clientX - rect.left) / rect.width * duration);
+      const start = parseInt(band.dataset.start, 10);
+      if (ms > start) {
+        band.dataset.end = ms;
+        band.style.width = (100 * (ms - start) / duration) + "%";
+        const row = document.querySelector(`#segTable tr[data-step="${band.dataset.step}"]`);
+        if (row) row.querySelector('input[name="end"]').value = ms;
+      }
+    };
+    const up = () => { window.removeEventListener("pointermove", move);
+                       window.removeEventListener("pointerup", up); };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  });
+});
+
+document.getElementById("saveBtn").addEventListener("click", async () => {
+  const segments = [...document.querySelectorAll("#segTable tr[data-step]")].map(tr => {
+    const start = tr.querySelector('input[name="start"]').value;
+    const end = tr.querySelector('input[name="end"]').value;
+    return {step_id: tr.dataset.step,
+            observable: start !== "" && end !== "",
+            t_start_ms: start === "" ? null : parseInt(start, 10),
+            t_end_ms: end === "" ? null : parseInt(end, 10)};
+  });
+  const r = await fetch(`/cases/{{ case.id }}/segments`, {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({segments}),
+  });
+  const j = await r.json();
+  document.getElementById("saveMsg").textContent =
+    r.ok ? `저장됨 — 변경 ${j.n_changes}건 (flywheel 라벨로 축적)` : "저장 실패";
+});
+</script>
+{% endblock %}

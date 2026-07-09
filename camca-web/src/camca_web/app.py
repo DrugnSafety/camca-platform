@@ -33,8 +33,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from .routes.patient import router as patient_router
     app.include_router(patient_router)
 
+    from .routes.dashboard import router as dashboard_router
+    app.include_router(dashboard_router)
+
     @app.get("/health")
     def health() -> dict:
         return {"status": "ok"}
+
+    # 운영 전용 백그라운드 워커 — 테스트에서는 환경변수 미설정으로 비활성.
+    import os
+    if os.environ.get("CAMCA_START_WORKER") == "1":
+        from .jobs import start_worker
+        from .runner import build_default_deps, process_case
+        deps = build_default_deps()
+        start_worker(app.state.session_factory,
+                     lambda cid: process_case(cid, app.state.session_factory,
+                                              settings, deps))
 
     return app
