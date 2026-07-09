@@ -146,6 +146,7 @@ class MultiModelPipeline:
         self.enable_telemetry = enable_telemetry
         self.use_pydantic_schema = use_pydantic_schema
         self.use_phase_engine = use_phase_engine
+        self.phase_vlm_weight_up = False
         self._telemetry_summary: dict | None = None
         self._telemetry_stream: list[dict] | None = None
         self._video_path: Path | None = None
@@ -159,6 +160,11 @@ class MultiModelPipeline:
             self._telemetry_summary = compute_telemetry_summary(stream)
         except ImportError:
             self._telemetry_summary = None
+
+    def set_phase_vlm_weight_up(self, value: bool = True) -> None:
+        """quality gate가 telemetry 열화(낮은 얼굴 검출률·측면 촬영)를 보고한
+        영상에서 Stage 2 VLM 가중을 상향한다 (spec §5.3-2, L6 완화)."""
+        self.phase_vlm_weight_up = bool(value)
 
     def _now_iso(self) -> str:
         return datetime.now(timezone.utc).isoformat()
@@ -205,7 +211,10 @@ class MultiModelPipeline:
             from .segmentation import PhaseRecognitionEngine
             start = self._now_iso()
             t0 = time.perf_counter()
-            engine = PhaseRecognitionEngine(vlm_backend=self.segmenter_backend)
+            engine = PhaseRecognitionEngine(
+                vlm_backend=self.segmenter_backend,
+                vlm_weight_up=self.phase_vlm_weight_up,
+            )
             result = engine.segment_from_telemetry(
                 telemetry, device_type, case_id=case_id or "unknown",
                 video_path=video_path,

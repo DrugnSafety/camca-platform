@@ -29,8 +29,12 @@ class PhaseRecognitionEngine:
         result = engine.segment_from_telemetry(telemetry, "pMDI", "X")
     """
 
-    def __init__(self, vlm_backend: Any | None = None):
+    def __init__(self, vlm_backend: Any | None = None,
+                 vlm_weight_up: bool = False):
         self.vlm_backend = vlm_backend
+        # spec §5.3-2: quality gate가 telemetry 열화(측면 촬영 등)를 보고한
+        # 영상은 Stage 2에서 VLM 경계에 우선권을 준다 (L6 완화).
+        self.vlm_weight_up = vlm_weight_up
 
     def segment_from_telemetry(
         self,
@@ -93,7 +97,8 @@ class PhaseRecognitionEngine:
                     continue
                 raw = self.vlm_backend.analyze_frames(build_refiner_prompt(seg), frames)
                 parsed = raw if isinstance(raw, dict) else json.loads(raw)
-                merged = apply_vlm_refinement(merged, {"segments": [parsed]})
+                merged = apply_vlm_refinement(merged, {"segments": [parsed]},
+                                              vlm_weight_up=self.vlm_weight_up)
 
             # (b) telemetry-blind step — sparse 전체 스캔 1회
             blind = [s for s in merged if s.get("needs_vlm")]
@@ -106,6 +111,7 @@ class PhaseRecognitionEngine:
                     build_blind_scan_prompt(blind, device_type), sparse,
                 )
                 parsed = raw if isinstance(raw, dict) else json.loads(raw)
-                merged = apply_vlm_refinement(merged, parsed)
+                merged = apply_vlm_refinement(merged, parsed,
+                                              vlm_weight_up=self.vlm_weight_up)
 
         return merged

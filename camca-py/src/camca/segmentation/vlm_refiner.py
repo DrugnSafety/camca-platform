@@ -66,20 +66,44 @@ def build_blind_scan_prompt(unobserved: list[dict[str, Any]], device_type: str) 
     )
 
 
+def _clamp_no_overlap(segments: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """observable 세그먼트를 리스트(템플릿) 순서로 훑어 겹침을 제거 —
+    Stage 3의 구조 불변조건(경계 겹침 0건)을 VLM 경계 채택 후에도 보장."""
+    prev_end: int | None = None
+    for seg in segments:
+        if not seg.get("observable") or seg.get("t_start_ms") is None:
+            continue
+        if prev_end is not None and seg["t_start_ms"] < prev_end:
+            seg["t_start_ms"] = prev_end
+        if seg.get("t_end_ms") is not None and seg["t_end_ms"] < seg["t_start_ms"]:
+            seg["t_end_ms"] = seg["t_start_ms"]
+        prev_end = seg.get("t_end_ms", seg["t_start_ms"])
+    return segments
+
+
 def apply_vlm_refinement(
     segments: list[dict[str, Any]],
     vlm_result: dict[str, Any],
+    vlm_weight_up: bool = False,
 ) -> list[dict[str, Any]]:
     """VLM 응답을 draft 세그먼트에 병합 (순수 함수 — I/O 없음).
 
-    규칙:
+    규칙 (기본 모드):
       - needs_vlm step + VLM observed → observable=True, source=vlm
       - telemetry step + VLM 일치(±500ms) → source=both, confidence +0.1 (cap 1.0)
       - telemetry step + VLM 불일치(>2000ms) → conflict_flagged, confidence×0.6,
         경계는 telemetry 유지 (ms 정밀도 우위 원칙)
+
+    vlm_weight_up=True (spec §5.3-2 — quality gate가 telemetry 열화를 보고한 영상):
+      - 일치(±500ms) 규칙은 동일
+      - 불일치(>500ms)면 VLM 경계를 채택 (source=vlm, telemetry 제안은
+        telemetry_proposed_t_start_ms로 보존). conflict 구간(≥2000ms)의
+        conflict_flagged는 유지 — NEEDS_ATTENTION 배지 경로 불변.
+      - 채택 후 no-overlap 클램프 적용 (구조 불변조건 유지)
     """
     vlm_by_id = {s["step_id"]: s for s in vlm_result.get("segments", [])}
     refined = []
+    adopted_any = False
     for seg in segments:
         seg = dict(seg)  # copy
         v = vlm_by_id.get(seg["step_id"])
@@ -102,6 +126,18 @@ def apply_vlm_refinement(
                     boundary_confidence=round(min(1.0, seg["boundary_confidence"] + 0.1), 2),
                     visual_summary=v.get("visual_summary"),
                 )
+            elif vlm_weight_up:
+                # telemetry 열화 모드: VLM 경계 채택 (검출자 cap 0.85와 동일)
+                seg.update(
+                    t_start_ms=v["t_start_ms"], t_end_ms=v["t_end_ms"],
+                    boundary_source="vlm",
+                    boundary_confidence=round(min(v.get("confidence", 0.5), 0.85), 2),
+                    visual_summary=v.get("visual_summary"),
+                    telemetry_proposed_t_start_ms=seg["t_start_ms"],
+                )
+                if gap >= VLM_CONFLICT_THRESHOLD_MS:
+                    seg["conflict_flagged"] = True
+                adopted_any = True
             elif gap >= VLM_CONFLICT_THRESHOLD_MS:
                 seg.update(
                     conflict_flagged=True,
@@ -112,4 +148,6 @@ def apply_vlm_refinement(
             else:
                 seg["visual_summary"] = v.get("visual_summary")
         refined.append(seg)
+    if adopted_any:
+        refined = _clamp_no_overlap(refined)
     return refined
