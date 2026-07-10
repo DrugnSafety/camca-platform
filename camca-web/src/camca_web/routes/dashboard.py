@@ -1,7 +1,10 @@
 """의사용 대시보드 — 사후 모니터링 + 타임라인 경계·점수 수정 (flywheel 라벨 입구)."""
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, field_validator
 
 from camca.scoring import compute_final_score
@@ -64,6 +67,20 @@ def case_detail(request: Request, case_id: str):
         request, "case_detail.html",
         {"case": case, "segments": segments, "duration_ms": max(duration, 1),
          "score_ctx": score_ctx})
+
+
+@router.get("/cases/{case_id}/video")
+def case_video(request: Request, case_id: str):
+    """타임라인 리뷰용 원본 재생 — 로컬 스토리지에서 스태프에게만 서빙."""
+    require_staff(request)
+    with request.app.state.session_factory() as s:
+        case = s.get(Case, case_id)
+        if case is None:
+            raise HTTPException(404)
+        video_path = Path(case.video_path)
+    if not video_path.is_file():
+        raise HTTPException(404)
+    return FileResponse(video_path, media_type="video/mp4")
 
 
 class CorrectionPayload(BaseModel):

@@ -5,7 +5,7 @@
 <p><span class="badge">NEEDS_ATTENTION</span> {{ case.attention_reasons | join(", ") }}</p>
 {% endif %}
 
-<video id="player" controls width="100%" src="/static/placeholder.mp4"></video>
+<video id="player" controls width="100%" src="/cases/{{ case.id }}/video"></video>
 
 <div id="timeline" style="position:relative;height:48px;background:#eee;margin:8px 0"
      data-duration="{{ duration_ms }}">
