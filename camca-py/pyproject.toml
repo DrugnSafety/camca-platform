@@ -1,0 +1,90 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "camca"
+version = "0.3.0"
+description = "CAMCA — Camera-based Automated Multi-agent Clinical Assessment of Inhaler Technique. Python package for video-based inhaler technique evaluation with multi-model (Claude/Gemini/Ollama) dual-agent comparison, MediaPipe+audio telemetry layer, and Pydantic schema enforcement."
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [
+    {name = "Min-Gyu Kang, MD", email = "drugnsafety@gmail.com"},
+]
+keywords = [
+    "asthma", "inhaler", "clinical-assessment", "vlm",
+    "multi-agent", "inter-rater-reliability", "gina", "critikal",
+    "claude", "gemini", "ollama",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Healthcare Industry",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+]
+
+# Core dependencies (always needed)
+dependencies = [
+    "reportlab>=4.0",
+    "pypdf>=3.0",
+    "openpyxl>=3.1",
+    "pillow>=10.0",
+    "requests>=2.31",
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+# Each backend is optional — install only what you need
+claude = ["anthropic>=0.40"]
+gemini = ["google-generativeai>=0.8"]
+# Telemetry layer (P1) — MediaPipe vision + librosa audio
+telemetry = [
+    "mediapipe>=0.10",
+    "opencv-python>=4.8",
+    "librosa>=0.10",
+    "numpy>=1.24",
+]
+# Everything
+all = [
+    "anthropic>=0.40",
+    "google-generativeai>=0.8",
+    "mediapipe>=0.10",
+    "opencv-python>=4.8",
+    "librosa>=0.10",
+    "numpy>=1.24",
+]
+dev = ["build>=1.0", "pytest>=7.0"]
+
+[project.urls]
+Homepage = "https://github.com/drugnsafety/camca"
+Documentation = "https://github.com/drugnsafety/camca#readme"
+Repository = "https://github.com/drugnsafety/camca"
+
+[project.scripts]
+camca = "camca.cli:main"
+camca-build-guide = "camca.guide_builder:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["camca*"]
+
+[tool.setuptools.package-data]
+"camca.resources" = [
+    "fonts/*.ttf",
+    "skills/*.md",
+    "static/*.pdf",
+    "reference/*.md",
+    "reference/*.xlsx",
+]
