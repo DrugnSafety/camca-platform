@@ -47,7 +47,7 @@ claude = ["anthropic>=0.40"]
 gemini = ["google-generativeai>=0.8"]
 # Telemetry layer (P1) — MediaPipe vision + librosa audio
 telemetry = [
-    "mediapipe>=0.10",
+    "mediapipe>=0.10,<0.10.19",
     "opencv-python>=4.8",
     "librosa>=0.10",
     "numpy>=1.24",
@@ -56,7 +56,7 @@ telemetry = [
 all = [
     "anthropic>=0.40",
     "google-generativeai>=0.8",
-    "mediapipe>=0.10",
+    "mediapipe>=0.10,<0.10.19",
     "opencv-python>=4.8",
     "librosa>=0.10",
     "numpy>=1.24",

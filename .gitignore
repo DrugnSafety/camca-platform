@@ -42,3 +42,19 @@ camca-inhaler-eval/logs/*/frames_dense/
 build/
 dist/
 *.egg-info/
+
+# 참조 교육영상 — 제3자 저작물. 다운로드 산출물은 절대 커밋 금지
+# (metadata/*.info.json 은 재생시간·해상도 근거자료이므로 추적함)
+reference-videos/downloads/
+reference-videos/metadata/_errors.log
+
+# ASCII 정규화 복사본 (원본과 동일한 제3자 저작물)
+reference-videos/_ascii_stage/
+
+# 대용량 프레임 이미지(zip 원본은 evaluations/batch64/frames_zip, *.zip 규칙으로 이미 제외)
+evaluations/batch64/frames_batch64/
+
+# 대용량 프레임 매핑 CSV(2.5~3MB, 2만 행 이상)와 생성된 샘플 PDF는 git 추적 제외 — 로컬 evaluations/ 및 batch64_results_final.zip 보존
+evaluations/frame_step_mapping_*.csv
+evaluations/batch64/frame_step_mapping_*.csv
+camca-inhaler-eval/scripts/sample_*_report.pdf

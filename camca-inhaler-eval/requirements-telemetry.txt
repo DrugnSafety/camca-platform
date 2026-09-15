@@ -1,0 +1,20 @@
+# CAMCA 텔레메트리 스택 — 검증된 버전 고정 (2026-09-03 클라우드 샌드박스 실측 확인)
+#
+# 배경: 2026-07~08 파일럿 18건이 전부 텔레메트리 실패(VLM-only 축소 모드)로 실행됨.
+# 원인: mediapipe 0.10.32 에서 레거시 `mp.solutions` API가 제거됨
+#       → run_telemetry.py 가 `module 'mediapipe' has no attribute 'solutions'` 로 즉시 실패.
+#       pyproject 의 `mediapipe>=0.10` 은 상한이 없어 신버전이 자동 설치되는 것이 문제.
+#
+# 검증: 아래 조합에서 mp.solutions.face_mesh.FaceMesh 생성 + librosa + cv2 연산 모두 정상.
+#       2026-05-21 MediaPipe 실측 성공 기록(logs/MEDIAPIPE_FINDINGS_AND_RAW_DATA.md)의
+#       0.10.18 / librosa 0.11.0 조합과 일치.
+
+mediapipe==0.10.18      # 0.10.19+ 에서 mp.solutions 제거됨 — 상한 필수
+librosa==0.11.0
+numpy<2                 # mediapipe 0.10.18 이 numpy 1.x 를 요구
+opencv-python<4.12      # 4.12+ 는 numpy>=2 를 요구하여 위와 충돌
+
+# 설치:
+#   pip install -r requirements-telemetry.txt
+# 확인:
+#   python -c "import mediapipe as mp; assert hasattr(mp,'solutions'); print('OK')"

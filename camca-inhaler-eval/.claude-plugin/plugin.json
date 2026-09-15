@@ -1,0 +1,29 @@
+{
+  "name": "camca-inhaler-eval",
+  "version": "0.4.1",
+  "description": "Camera-based Automated Multi-agent Clinical Assessment of Inhaler Technique. 4-layer hybrid: MediaPipe+librosa telemetry → dual-agent VLM evaluation → Cohen kappa adjudication → deterministic scoring. v0.4.1: device-specific audio profiles + VLM-telemetry reconciliation + false-positive guards. MVP: pMDI + DPI Turbuhaler.",
+  "author": {
+    "name": "Min-Gyu Kang, MD",
+    "email": "drugnsafety@gmail.com"
+  },
+  "keywords": [
+    "CRITIKAL",
+    "GINA",
+    "VLM",
+    "asthma",
+    "audio-profile",
+    "cdss",
+    "clinical-assessment",
+    "gemini",
+    "inhaler-technique",
+    "inter-rater-reliability",
+    "librosa",
+    "mediapipe",
+    "multi-agent",
+    "multi-model",
+    "ollama",
+    "reconciliation",
+    "telemetry"
+  ],
+  "license": "MIT"
+}
