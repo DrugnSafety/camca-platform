@@ -13,10 +13,10 @@
 | `inhaler-checklist-ellipta` | Relvar/Breo, Trelegy, Anoro, Incruse, Arnuity Ellipta | E1–E7 + E8,E9 | CRIT-ELP-01~09 |
 | `inhaler-checklist-genuair` | Genuair / Pressair (Eklira, Duaklir, Brimica) | G1–G7 + G8,G9 | CRIT-GEN-01~10 |
 | `inhaler-checklist-respimat` | Respimat SMI (Spiriva, Spiolto, Striverdi, Combivent) | R1–R7 + R8,R9 | CRIT-RSM-01~09 |
-| `inhaler-checklist-capsule-dpi` | HandiHaler, Breezhaler, Neohaler (캐슐형) | C1–C7 + C8,C9,C10 | CRIT-CAP-01~14 |
+| `inhaler-checklist-capsule-dpi` | HandiHaler, Breezhaler, Neohaler (캡슐형) | C1–C7 + C8,C9,C10 | CRIT-CAP-01~14 |
 | `inhaler-checklist-nexthaler` | NEXThaler (Foster/Trimbow), RediHaler | N1–N7 + N8,N9 | CRIT-NXT-01~13 |
 | `inhaler-checklist-dpi-generic` | Spiromax, RespiClick, Flexhaler, Twisthaler, Easyhaler, Forspiro 등 전용 스킬 없는 다회용 DPI | P1–P7 + P8,P9 | CRIT-DPI-01~13 |
-| `inhaler-checklist-nebulizer` | 제트/컴프레서·메쉬 네뷐라이저 (마우스피스/안면마스크) | B1–B7 + B8,B9 | CRIT-NEB-01~14 |
+| `inhaler-checklist-nebulizer` | 제트/컴프레서·메쉬 네뷸라이저 (마우스피스/안면마스크) | B1–B7 + B8,B9 | CRIT-NEB-01~14 |
 
 모든 스킬은 기존 `inhaler-checklist-turbuhaler`와 동일한 구조입니다: Scope + 형제 스킬 라우팅 → 개념적 차이 → 평가 프레임워크 → 단계별 Level 0–3 루브릭 → Critical Error 요약표 → 판정 로직 의사코드 → VLM 관찰 가이드 → 디바이스 전환 환자 주의사항 → 참고문헌(GINA 2024, CRITIKAL 2017, Sanchis 2016, Plaza 2018, Laube 2011 등 — 임의 인용 없음).
 
@@ -25,8 +25,8 @@
 ### 디바이스별로 특히 주의한 임상적 차이
 
 - **Respimat(SMI)**: 흡입은 **느리고 깊게** — DPI의 "세게 빨아들이기"를 그대로 적용하면 안 됨. 이 혼동 자체를 critical error(CRIT-RSM-03)로 명시.
-- **네뷐라이저**: **평상시 호흡(tidal breathing)** 이 정상. 흡입력·숨참기 요구 없음. DPI 기준 적용 금지를 스킬에 명시. 사용 후 세척은 감염관리상 safety-critical로 취급.
-- **캐슐형 DPI**: 캐슐을 삼켜버리는 실제 사고, 천공 반복으로 인한 캐슐 파편 흡입 등 다른 디바이스에 없는 실패 모드 포함. 캐슐 회전음(휘파람 소리)이 흡입력의 고신뢰 오디오 근거.
+- **네뷸라이저**: **평상시 호흡(tidal breathing)** 이 정상. 흡입력·숨참기 요구 없음. DPI 기준 적용 금지를 스킬에 명시. 사용 후 세척은 감염관리상 safety-critical로 취급.
+- **캡슐형 DPI**: 캡슐을 삼켜버리는 실제 사고, 천공 반복으로 인한 캡슐 파편 흡입 등 다른 디바이스에 없는 실패 모드 포함. 캡슐 회전음(휘파람 소리)이 흡입력의 고신뢰 오디오 근거.
 - **Genuair**: 빨강→초록→빨강 창 색 변화가 **시각만으로** 확인 가능 — VLM 평가에 가장 유리한 디바이스.
 - **NEXThaler**: 흡입 성공 시에만 카운터가 감소하는 구조라 "복용 여부"를 사후 검증 가능.
 
@@ -53,7 +53,7 @@ git add skills scripts && git commit -m "feat: add 9 device checklists; fix pMDI
 
 ## 남아 있는 알려진 이슈 (미수정)
 
-1. `scripts/research_log_exporter.py` — CSV writer가 `tie_breaker_invoked` / `clinician_review_flag` / `kappa_interpretation` 을 중첩 객체로 기대하나 adjudicator는 top-level scalar로 출력. 해당 CSV 컴럼이 비어 나옴(JSON export는 정상).
+1. `scripts/research_log_exporter.py` — CSV writer가 `tie_breaker_invoked` / `clinician_review_flag` / `kappa_interpretation` 을 중첩 객체로 기대하나 adjudicator는 top-level scalar로 출력. 해당 CSV 컬럼이 비어 나옴(JSON export는 정상).
 2. `scripts/kappa_calculator.py` — 단계 레벨이 `null`(관찰 불가) 이면 크래시. 이 때문에 "관찰 불가 단계에 억지로 점수를 매기는" 잘못된 유인이 생김.
 3. `scripts/korean_pdf_generator.py` — 한글 폰트 경로 하드코딩, 미발견 시 Helvetica로 조용히 폴백.
 4. `scripts/run_telemetry.py` — MediaPipe API 불일치(`module 'mediapipe' has no attribute 'solutions'`)로 이 환경에서 항상 실패. 파이프라인은 VLM-only 축소 모드로 정상 폴백되지만, **오디오 근거가 필요한 단계(흡입력·클릭음)의 신뢰도가 전반적으로 낮아지는 주된 원인**입니다. 우선순위 높음.
