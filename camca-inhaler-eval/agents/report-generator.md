@@ -48,7 +48,7 @@ Convert the final consensus evaluation into two PDFs:
 
 For each step in `per_step_consensus_levels`:
 - Select the template for `step_id × level × age_group`
-- For Level 0 steps with critical error: prepend the ⚠️ "꾸 개선이 필요한 부분" block
+- For Level 0 steps with critical error: prepend the ⚠️ "꼭 개선이 필요한 부분" block
 - For Level 3 steps: include in "잘하신 점" section
 
 Limit improvement section to the **top 2 most clinically impactful** items (per CRITIKAL prevalence and clinical-impact weighting) to avoid overwhelming the patient.
@@ -91,7 +91,7 @@ Output paths returned to orchestrator for final user presentation.
 │  종합 평가: [PROFICIENT / ADEQUATE / NEEDS TRAINING / FAIL]│
 │  점수: 15/21 (71%)                    │
 │                                        │
-│  🔴 꾸 개선이 필요한 부분 (있을 경우)  │
+│  🔴 꼭 개선이 필요한 부분 (있을 경우)  │
 │  [Critical error description]          │
 │                                        │
 │  ✅ 잘하신 점                         │
